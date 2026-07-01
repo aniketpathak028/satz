@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Satz
 
-## Getting Started
+> Learn a language by translating sentences — not memorizing grammar tables.
 
-First, run the development server:
+Satz generates real, level-appropriate sentences in English and challenges you to translate them mentally before revealing the answer. Built with Next.js, Tailwind CSS, and Claude.
+
+## Stack
+
+- **Next.js 15** (App Router)
+- **Tailwind CSS v4**
+- **Anthropic SDK** (Claude for sentence generation)
+- **TypeScript** throughout
+
+## Local Setup
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Set up environment
+cp .env.local.example .env.local
+# → Add your ANTHROPIC_API_KEY from https://console.anthropic.com
+
+# 3. Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy to Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Install Vercel CLI
+npm i -g vercel
 
-## Learn More
+# Deploy
+vercel
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then add your environment variable in the Vercel dashboard:
+- `ANTHROPIC_API_KEY` → your key from console.anthropic.com
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Or use the Vercel UI: **Project → Settings → Environment Variables**.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Extending
 
-## Deploy on Vercel
+### Add a new language
+In `components/LanguageSelector.tsx`, uncomment or add to `SUPPORTED_LANGUAGES`:
+```ts
+{ code: "fr", label: "French", nativeLabel: "Français", flag: "🇫🇷" }
+```
+That's it — the prompt system picks it up automatically.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Adjust level descriptions
+Edit `lib/prompts.ts` → `LEVEL_DESCRIPTIONS` to tune how Claude calibrates each CEFR level.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Add sentence history
+Wire up a `useState<GeneratedSentence[]>` in `page.tsx` and push each result — the types are already structured for this.
+
+### Add a user account layer
+The API route is stateless — drop in NextAuth or Clerk for auth, and persist history to a database (e.g. Supabase, PlanetScale) keyed by user ID.
+
+## Project Structure
+
+```
+app/
+  api/generate/route.ts   ← API: calls Claude, returns sentence JSON
+  layout.tsx              ← Fonts, metadata
+  page.tsx                ← Main UI
+  globals.css             ← Tailwind + animation utilities
+components/
+  LanguageSelector.tsx    ← Language picker (scalable)
+  LevelSelector.tsx       ← CEFR level picker
+  SentenceCard.tsx        ← Displays the English sentence
+  TranslationReveal.tsx   ← Reveals translation on demand
+lib/
+  anthropic.ts            ← Anthropic client singleton
+  prompts.ts              ← Prompt templates (one place to edit)
+  types.ts                ← Shared TypeScript types
+```
